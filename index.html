@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>马斯克模拟器：首富的挥霍生活</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FontAwesome 图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700&display=swap');
+
+        /* 修复：强制显示垂直滚动条，防止页面左右跳动 */
+        html {
+            overflow-y: scroll; 
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Space Grotesk', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* 关键修复：强制数字等宽，防止跳动 */
+        .tabular-nums {
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 钞票雨动画 */
+        @keyframes fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+        .money-rain {
+            position: fixed;
+            top: 0;
+            color: #22c55e;
+            font-size: 24px;
+            z-index: 50;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+
+        /* 霓虹特效 */
+        .neon-text {
+            text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+        
+        /* 粘性顶部栏背景模糊 */
+        .glass-header {
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 物品卡片悬浮效果 */
+        .item-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            /* 移除原先的 background-size/position，改用 img 标签 */
+        }
+        .item-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.5);
+            border-color: #3b82f6;
+            z-index: 10;
+        }
+        .item-card:hover img {
+            transform: scale(1.1); /* 图片轻微放大效果 */
+        }
+        .item-card:active {
+            transform: scale(0.98);
+        }
+
+        /* 进度条动画 */
+        .progress-fill {
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .income-pulse-pos { color: #22c55e; } /* 绿色 */
+        .income-pulse-neg { color: #ef4444; } /* 红色 */
+
+        /* 警灯闪烁动画 */
+        @keyframes police-flash {
+            0% { background-color: #450a0a; } /* 深红色 */
+            50% { background-color: #172554; } /* 深蓝色 */
+            100% { background-color: #450a0a; }
+        }
+        .wanted-active {
+            animation: police-flash 1s infinite;
+        }
+
+        /* 分类按钮样式 */
+        .category-btn.active {
+            background-color: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* 新闻滚动条 */
+        .news-ticker-container {
+            overflow: hidden;
+            white-space: nowrap;
+            background: #000;
+            color: #fca5a5;
+            padding: 8px 0;
+            font-family: 'Noto Serif SC', serif;
+            border-bottom: 1px solid #333;
+            position: relative;
+            z-index: 45;
+        }
+        .news-ticker {
+            display: inline-block;
+            animation: ticker 30s linear infinite;
+            font-weight: bold;
+        }
+        @keyframes ticker {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* 任务完成特效 */
+        .mission-completed {
+            text-decoration: line-through;
+            color: #4ade80;
+            opacity: 0.6;
+        }
+
+        /* 仪表盘通用样式 */
+        .meter-container {
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .meter-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        /* Grok 按钮 */
+        .grok-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: black;
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            transition: transform 0.2s;
+        }
+        .grok-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* AI 闪烁 */
+        .ai-sparkle {
+            animation: sparkle 1.5s infinite;
+        }
+        @keyframes sparkle {
+            0% { text-shadow: 0 0 5px #fff; }
+            50% { text-shadow: 0 0 20px #a855f7; color: #d8b4fe; }
+            100% { text-shadow: 0 0 5px #fff; }
+        }
+
+        /* 警告 Toast 动画 */
+        .toast-enter {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+        .toast-exit {
+            transform: translate(-50%, -20px);
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col transition-colors duration-500" id="main-body">
+
+    <!-- 顶部钱包栏 (Z-Index 50 确保最高) -->
+    <header class="glass-header sticky top-0 z-50 px-4 py-3 shadow-2xl">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <!-- 钱与进度 -->
+            <div class="flex-1 w-full">
+                <div class="flex items-center gap-4 mb-1">
+                    <!-- 头像区域 -->
+                    <div class="relative group cursor-pointer">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Elon_Musk_Royal_Society_%28crop2%29.jpg/220px-Elon_Musk_Royal_Society_%28crop2%29.jpg" 
+                             class="w-14 h-14 rounded-full border-2 border-green-500 object-cover shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-transform group-hover:scale-105"
+                             alt="Elon Musk"
+                             onerror="this.onerror=null; this.src='https://placehold.co/100x100/111/4ade80?text=Elon';">
+                        <div class="absolute -bottom-1 -right-1 bg-black rounded-full border border-gray-700 p-0.5">
+                            <i class="fas fa-check-circle text-blue-400 text-sm"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- 余额区域 (tabular-nums 防止数字跳动) -->
+                    <div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Total Net Worth</div>
+                        <h1 id="balance-display" class="text-2xl md:text-4xl font-bold text-green-400 neon-text font-mono tracking-tighter leading-none whitespace-nowrap tabular-nums">
+                            $750,000,000,000
+                        </h1>
+                    </div>
+                </div>
+
+                <div class="w-full bg-gray-800 h-1.5 mt-2 rounded-full overflow-hidden relative group cursor-help">
+                    <div id="progress-bar" class="bg-gradient-to-r from-green-500 to-emerald-300 h-full progress-fill w-full"></div>
+                    <div class="absolute top-2 left-0 bg-gray-900 text-xs text-white p-2 rounded hidden group-hover:block z-50 border border-gray-600">
+                        如果资产归零，你将获得自由。
+                    </div>
+                </div>
+                <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                    <span>$0 (目标)</span>
+                    <span id="percentage-text" class="tabular-nums">100% 剩余</span>
+                </div>
+            </div>
+
+            <!-- 核心指标仪表盘 -->
+            <div class="grid grid-cols-3 gap-3 w-full md:w-1/2">
+                <!-- 紧张度 -->
+                <div class="bg-gray-900/80 p-2 rounded border border-gray-700 relative group">
+                    <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-gray-400"><i class="fas fa-globe"></i> 紧张度</span>
+                        <span id="tension-val" class="font-bold text-green-400 tabular-nums">0%</span>
+                    </div>
+                    <div class="meter-container"><div id="tension-bar" class="meter-fill bg-orange-500" style="width: 0%"></div></div>
+                    <div class="absolute -bottom-8 left-0 w-full bg-black text-[10px] text-white p-1 rounded hidden group-hover:block z-50 text-center border border-gray-600">
+                        100% = 资产冻结 (败北)
+                    </div>
+                </div>
+                
+                <!-- 法律风险 -->
+                <div class="bg-gray-900/80 p-2 rounded border border-gray-700 relative group">
+                    <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-gray-400"><i class="fas fa-gavel"></i> 风险值</span>
+                        <span id="risk-val" class="font-bold text-green-400 tabular-nums">0%</span>
+                    </div>
+                    <div class="meter-container"><div id="risk-bar" class="meter-fill bg-red-600" style="width: 0%"></div></div>
+                    <div class="absolute -bottom-8 left-0 w-full bg-black text-[10px] text-white p-1 rounded hidden group-hover:block z-50 text-center border border-gray-600">
+                        100% = 牢底坐穿 (败北)
+                    </div>
+                </div>
+
+                <!-- 支持率 -->
+                <div class="bg-gray-900/80 p-2 rounded border border-gray-700 relative group">
+                    <div class="flex justify-between text-[10px] mb-1">
+                        <span class="text-gray-400"><i class="fas fa-heart"></i> 支持率</span>
+                        <span id="pop-val" class="font-bold text-blue-400 tabular-nums">100%</span>
+                    </div>
+                    <div class="meter-container"><div id="pop-bar" class="meter-fill bg-blue-500" style="width: 100%"></div></div>
+                    <div class="absolute -bottom-12 left-0 w-200 bg-black text-[10px] text-white p-1 rounded hidden group-hover:block z-50 border border-gray-600 -translate-x-1/2">
+                        高支持率 = 股价飙升(资产增加)。<br>你需要让人们讨厌你！
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 悬浮警告 Toast (防止布局跳动) -->
+    <div id="toast-warning" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[60] bg-red-900/90 border border-red-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px]">
+        <div class="bg-red-500 rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+            <i class="fas fa-exclamation text-xs"></i>
+        </div>
+        <span id="toast-text" class="font-bold text-sm"></span>
+    </div>
+
+    <!-- 新闻快讯 -->
+    <div class="news-ticker-container">
+        <div id="news-text" class="news-ticker">BREAKING: 埃隆·马斯克宣布其个人资产超过部分国家GDP，引发联合国关注...</div>
+    </div>
+
+    <!-- 主要内容区 -->
+    <main class="flex-1 max-w-6xl mx-auto w-full p-4 flex flex-col md:flex-row gap-4 relative">
+        
+        <!-- 左侧：状态与任务 (Sticky, 固定最小宽度) -->
+        <div class="w-full md:w-1/4 space-y-4 md:sticky md:top-36 h-fit z-20 min-w-[250px]">
+            
+            <!-- 现金流面板 -->
+            <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700 text-center shadow-lg backdrop-blur-md">
+                <div class="text-xs text-gray-400 mb-1">每秒现金流 (P/L)</div>
+                <!-- 修复：tabular-nums 防止数字跳动，min-height 防止高度塌陷 -->
+                <div id="income-display" class="text-2xl font-bold text-green-500 font-mono whitespace-nowrap overflow-hidden text-ellipsis tabular-nums min-h-[32px]">+$0</div>
+                <div id="market-factor" class="text-[10px] text-blue-300 mt-1">市场热度: 1.0x</div>
+            </div>
+
+            <!-- 任务面板 (修复：移除内部刷新，改为按需更新) -->
+            <div class="bg-gray-900/90 border border-gray-700 rounded-xl p-4 shadow-lg">
+                <h3 class="text-green-400 font-bold mb-3 border-b border-gray-700 pb-2 text-sm">
+                    <i class="fas fa-tasks"></i> 战略目标
+                </h3>
+                <div id="mission-list" class="space-y-2 text-xs text-gray-400">
+                    <!-- JS 生成 -->
+                </div>
+            </div>
+
+            <!-- 游戏提示 -->
+            <div class="bg-blue-900/30 border border-blue-500/30 p-3 rounded-lg text-[10px] text-blue-200">
+                <p class="font-bold mb-1"><i class="fas fa-lightbulb"></i> 败家指南：</p>
+                <ul class="list-disc pl-4 space-y-1">
+                    <li>豪车、豪宅需要巨额维护费，这是破产的好帮手。</li>
+                    <li>商业投资可能会赚钱(陷阱)，但赛车队和足球队通常是烧钱机器。</li>
+                    <li>风险和紧张度不会自动消失，必须花钱“平事”。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 右侧：商店 -->
+        <div class="flex-1 w-full">
+            <!-- 分类导航 (添加 Sticky 支持 + 背景防穿透) -->
+            <div class="sticky top-28 z-30 bg-[#0f172a]/95 backdrop-blur-md py-2 -mx-4 px-4 mb-4 border-b border-gray-800 shadow-lg" id="category-sticky-wrapper">
+                <div class="flex overflow-x-auto gap-2 pb-1 no-scrollbar" id="category-container">
+                    <!-- 分类按钮由 JS 生成 -->
+                </div>
+            </div>
+
+            <!-- 购物网格 -->
+            <div id="shop-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <!-- 物品将通过 JS 动态生成 -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Grok Button -->
+    <button onclick="askGrok()" class="grok-btn group" title="Ask Grok">
+        <span class="font-bold font-mono text-white group-hover:hidden">X</span>
+        <i class="fas fa-robot text-white hidden group-hover:block ai-sparkle"></i>
+    </button>
+
+    <!-- Grok Modal -->
+    <div id="grok-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-black border border-white max-w-md w-full p-6 rounded-2xl relative shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+            <button onclick="closeGrok()" class="absolute top-2 right-4 text-gray-500 hover:text-white">✕</button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center">
+                    <span class="font-bold text-black font-mono text-xl">X</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-white">Grok 战略顾问</h3>
+                    <p class="text-xs text-gray-400">模式: 阴阳怪气 & 极度理智</p>
+                </div>
+            </div>
+            <div id="grok-content" class="text-gray-200 font-mono text-sm min-h-[60px] mb-4">
+                正在分析你的财务自杀计划... <i class="fas fa-circle-notch fa-spin"></i>
+            </div>
+            <button onclick="callGrokAdvice()" class="w-full bg-white text-black font-bold py-2 rounded hover:bg-gray-200 text-xs">
+                <i class="fas fa-magic mr-1"></i> 获取下一步行动建议
+            </button>
+        </div>
+    </div>
+
+    <!-- 游戏介绍 (Intro) -->
+    <div id="intro-modal" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 border-2 border-red-600 max-w-lg w-full p-8 rounded-xl shadow-[0_0_50px_rgba(220,38,38,0.3)] text-center relative">
+            <h1 class="text-4xl font-black text-white mb-2 uppercase italic tracking-widest text-red-500">破产危机</h1>
+            <p class="text-gray-400 font-mono text-xs mb-6">DIFFICULTY: HARDCORE STRATEGY</p>
+            
+            <div class="text-left bg-black/50 p-4 rounded border border-gray-800 mb-6 text-sm space-y-3">
+                <p><strong>目标：</strong> 将 $7500亿 归零。</p>
+                <p class="text-yellow-400"><strong>方式 1：报复性消费</strong><br>
+                <span class="text-gray-400 text-xs">买跑车、买海岛、买恐龙化石！尽情享受有钱人的枯燥生活。这些东西维护费极高。</span></p>
+                
+                <p class="text-red-400"><strong>陷阱 2：法律制裁</strong><br>
+                <span class="text-gray-400 text-xs">风险值满 100% 直接坐牢。你必须花钱雇佣律师和公关来洗白。</span></p>
+
+                <p class="text-blue-400"><strong>陷阱 3：大而不倒</strong><br>
+                <span class="text-gray-400 text-xs">如果你破产太快，政府会强行给你注资救市。请保持节奏。</span></p>
+            </div>
+
+            <button onclick="startGame()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded transition-all transform hover:scale-[1.02] shadow-lg">
+                开始挑战
+            </button>
+        </div>
+    </div>
+
+    <!-- 结局弹窗模板 -->
+    <div id="modal-end" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-gray-900 border border-gray-600 max-w-md w-full text-center rounded-xl p-8">
+            <div id="end-icon" class="text-6xl mb-4"></div>
+            <h2 id="end-title" class="text-3xl font-bold mb-2 text-white"></h2>
+            <p id="end-msg" class="text-gray-300 mb-6 text-sm"></p>
+            <button onclick="location.reload()" class="bg-white text-black font-bold py-3 px-8 rounded-full w-full hover:bg-gray-200">
+                重新开始
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // API Key
+        const apiKey = ""; 
+
+        // 游戏核心状态
+        let gameStarted = false;
+        const INITIAL_MONEY = 750000000000;
+        let currentMoney = INITIAL_MONEY;
+        let incomeRate = 0; // 基础收入/支出
+        let activeCategory = 'all';
+        
+        // 核心数值
+        let legalRisk = 0;      // 0-100: 满则入狱
+        let globalTension = 0;  // 0-100: 满则冻结
+        let popularity = 100;   // 0-100: 越高赚钱越快，越低赔钱越快
+        
+        // 市场因子
+        let marketMultiplier = 1.0; 
+        
+        // 历史记录 (用于检测暴跌触发救市)
+        let moneyHistory = [];
+
+        // 物品库 (Updated images via pollinations.ai)
+        const items = [
+            // --- 豪车超跑 (Cars) ---
+            { 
+                id: 101, name: "布加迪限量版", price: 10000000, 
+                img: "https://image.pollinations.ai/prompt/Bugatti%20Chiron%20Super%20Sport%20hypercar%20black%20and%20orange%20photorealistic?width=400&height=240&nologo=true",
+                desc: "油耗惊人，保险更贵", income: -50000, category: "cars", popDelta: 2 
+            },
+            { 
+                id: 102, name: "法拉利 250 GTO", price: 50000000, 
+                img: "https://image.pollinations.ai/prompt/Ferrari%20250%20GTO%20classic%20red%20race%20car%20photorealistic?width=400&height=240&nologo=true",
+                desc: "仅仅是放在车库里就要花钱保养", income: -10000, category: "cars", popDelta: 5 
+            },
+            { 
+                id: 103, name: "纯金 Cybertruck", price: 100000000, 
+                img: "https://image.pollinations.ai/prompt/Solid%20gold%20Tesla%20Cybertruck%20shiny%20reflective%20photorealistic?width=400&height=240&nologo=true",
+                desc: "土得掉渣，但真的很贵", income: 0, category: "cars", popDelta: -5 
+            },
+            { 
+                id: 104, name: "F1 车队", price: 200000000, 
+                img: "https://image.pollinations.ai/prompt/Formula%201%20race%20car%20speeding%20on%20track%20photorealistic?width=400&height=240&nologo=true",
+                desc: "世界上最烧钱的运动", income: -2000000, category: "cars", popDelta: 10 
+            },
+
+            // --- 顶级豪宅 (Luxury Estates) ---
+            { 
+                id: 201, name: "加勒比私人海岛", price: 150000000, 
+                img: "https://image.pollinations.ai/prompt/Tropical%20private%20island%20with%20luxury%20villa%20aerial%20view?width=400&height=240&nologo=true",
+                desc: "这就是你的海盗基地", income: -500000, category: "luxury", tensionDelta: 2 
+            },
+            { 
+                id: 202, name: "法国凡尔赛式城堡", price: 200000000, 
+                img: "https://image.pollinations.ai/prompt/French%20chateau%20castle%20luxury%20garden%20photorealistic?width=400&height=240&nologo=true",
+                desc: "修缮屋顶就要花几百万", income: -200000, category: "luxury", popDelta: 2 
+            },
+            { 
+                id: 203, name: "末日地堡", price: 500000000, 
+                img: "https://image.pollinations.ai/prompt/Underground%20luxury%20doomsday%20bunker%20interior%20sci-fi?width=400&height=240&nologo=true",
+                desc: "即使核战爆发也能活得很滋润", income: -100000, category: "luxury", riskDelta: -5 
+            },
+            { 
+                id: 204, name: "阿尔卑斯滑雪场", price: 1000000000, 
+                img: "https://image.pollinations.ai/prompt/Luxury%20ski%20resort%20Swiss%20Alps%20snow%20mountain?width=400&height=240&nologo=true",
+                desc: "只为你一个人开放", income: -1000000, category: "luxury", popDelta: -2 
+            },
+
+            // --- 稀世珍宝 (Collection) ---
+            { 
+                id: 301, name: "霸王龙骨架", price: 30000000, 
+                img: "https://image.pollinations.ai/prompt/T-Rex%20dinosaur%20fossil%20skeleton%20museum%20lighting?width=400&height=240&nologo=true",
+                desc: "这东西放在客厅很霸气", income: -10000, category: "collection", popDelta: 5 
+            },
+            { 
+                id: 302, name: "希望蓝钻", price: 350000000, 
+                img: "https://image.pollinations.ai/prompt/Hope%20Diamond%20blue%20gemstone%20close%20up%20macro?width=400&height=240&nologo=true",
+                desc: "传说中带有诅咒的钻石", income: 0, category: "collection", popDelta: 10 
+            },
+            { 
+                id: 303, name: "达芬奇真迹", price: 450000000, 
+                img: "https://image.pollinations.ai/prompt/Leonardo%20Da%20Vinci%20painting%20Salvator%20Mundi%20style?width=400&height=240&nologo=true",
+                desc: "安保费用是个天文数字", income: -50000, category: "collection", popDelta: 15 
+            },
+            { 
+                id: 304, name: "美国宪法原件", price: 50000000, 
+                img: "https://image.pollinations.ai/prompt/Old%20parchment%20US%20Constitution%20document%20historic?width=400&height=240&nologo=true",
+                desc: "把它买下来，只是为了好玩", income: 0, category: "collection", popDelta: 5, tensionDelta: 5 
+            },
+
+            // --- 运营维护 (必须品) ---
+            { id: 901, name: "顶级律师团队", price: 50000000, img: "https://image.pollinations.ai/prompt/Group%20of%20lawyers%20in%20suits%20courtroom?width=400&height=240&nologo=true", desc: "降低法律风险 (-0.5%/s)", income: -5000000, category: "management", effect: "risk_down" },
+            { id: 902, name: "全球公关公司", price: 30000000, img: "https://image.pollinations.ai/prompt/Press%20conference%20microphones%20media?width=400&height=240&nologo=true", desc: "降低国际紧张度 (-0.5%/s)", income: -3000000, category: "management", effect: "tension_down" },
+            { id: 903, name: "水军控评", price: 10000000, img: "https://image.pollinations.ai/prompt/Server%20room%20hacker%20matrix%20code?width=400&height=240&nologo=true", desc: "略微降低人气 (-0.2%/s)", income: -1000000, category: "management", effect: "pop_down" },
+
+            // --- 商业 (有些是赚钱陷阱) ---
+            { id: 11, name: "收购 Twitter", price: 44000000000, img: "https://image.pollinations.ai/prompt/Twitter%20HQ%20building%20X%20logo%20night?width=400&height=240&nologo=true", desc: "降低人气，增加亏损 (好东西!)", income: -10000000, category: "business", popDelta: -15, tensionDelta: 5 },
+            { id: 401, name: "收购 Disney", price: 180000000000, img: "https://image.pollinations.ai/prompt/Disney%20castle%20magic%20kingdom%20fireworks?width=400&height=240&nologo=true", desc: "陷阱：这会让你甚至更受欢迎", income: 50000000, category: "business", popDelta: 20, tensionDelta: 0 }, 
+            { id: 402, name: "炒作加密货币", price: 5000000000, img: "https://image.pollinations.ai/prompt/Bitcoin%20crashing%20chart%20red%20line?width=400&height=240&nologo=true", desc: "高风险：可能暴赚也可能暴雷", income: 0, category: "business", popDelta: -5, riskDelta: 10, effect: "gamble" },
+
+            // --- 科技 (通常增加人气 = 坏事) ---
+            { id: 8, name: "猎鹰9号发射", price: 67000000, img: "https://image.pollinations.ai/prompt/SpaceX%20Falcon%209%20rocket%20launch%20flames?width=400&height=240&nologo=true", desc: "虽贵，但会增加人气(收入增加)", income: 5000000, category: "tech", popDelta: 5, tensionDelta: 2 },
+            { id: 13, name: "火星殖民地", price: 100000000000, img: "https://image.pollinations.ai/prompt/Mars%20colony%20domes%20red%20planet%20surface?width=400&height=240&nologo=true", desc: "巨额维护费，但极高人气", income: -50000000, category: "tech", popDelta: 30, tensionDelta: 15 },
+            { id: 505, name: "私人武装", price: 500000000, img: "https://image.pollinations.ai/prompt/Futuristic%20soldiers%20mercenaries%20desert?width=400&height=240&nologo=true", desc: "增加紧张度，降低人气", income: -20000000, category: "tech", popDelta: -10, tensionDelta: 25, riskDelta: 15 },
+
+            // --- 政治与搞事 (降人气利器) ---
+            { id: 701, name: "激进政治献金", price: 2000000000, img: "https://image.pollinations.ai/prompt/Politicians%20shaking%20hands%20dark%20room%20money?width=400&height=240&nologo=true", desc: "大幅降低人气，高风险", income: 0, category: "politics", popDelta: -20, riskDelta: 20, tensionDelta: 10 },
+            { id: 602, name: "直播烧钱", price: 1000000000, img: "https://image.pollinations.ai/prompt/Bonfire%20of%20US%20dollar%20bills%20burning?width=400&height=240&nologo=true", desc: "极度危险，别买太多", income: 0, category: "politics", popDelta: -50, riskDelta: 40, effect: "crime" },
+            { id: 603, name: "私人演唱会", price: 10000000, img: "https://image.pollinations.ai/prompt/Pop%20star%20singing%20on%20stage%20concert?width=400&height=240&nologo=true", desc: "请霉霉来家里唱首歌", income: 0, category: "politics", popDelta: 2 },
+        ];
+
+        const categories = [
+            { id: 'all', name: '全部', icon: 'fa-list' },
+            { id: 'management', name: '运营维护', icon: 'fa-shield-alt' },
+            { id: 'cars', name: '豪车收藏', icon: 'fa-car' },
+            { id: 'luxury', name: '顶级豪宅', icon: 'fa-home' },
+            { id: 'collection', name: '稀世珍宝', icon: 'fa-gem' },
+            { id: 'business', name: '商业帝国', icon: 'fa-briefcase' },
+            { id: 'tech', name: '黑科技', icon: 'fa-rocket' },
+            { id: 'politics', name: '搞事', icon: 'fa-bullhorn' },
+        ];
+
+        let inventory = {};
+
+        // 任务 (带状态追踪，防止重复刷新)
+        const missions = [
+            { id: 'hate_me', desc: "全民公敌：将支持率降至 20% 以下", completed: false, check: () => popularity < 20 },
+            { id: 'loss_leader', desc: "亏损大亨：每秒亏损超过 1 亿美元", completed: false, check: () => calculateRealIncome() < -100000000 },
+            { id: 'safe_landing', desc: "走钢丝：风险和紧张度都超过 80% 但未失败", completed: false, check: () => legalRisk > 80 && globalTension > 80 },
+            { id: 'half_way', desc: "半山腰：资产剩余不到 3750 亿", completed: false, check: () => currentMoney < INITIAL_MONEY * 0.5 },
+        ];
+
+        // --- Core Game Logic ---
+
+        function init() {
+            renderCategories();
+            renderShop();
+            renderMissions(); // 只在初始化时渲染一次
+            updateUI();
+            
+            setInterval(gameLoop, 1000);
+        }
+
+        function gameLoop() {
+            if (!gameStarted) return;
+            if (checkGameOver()) return;
+
+            // 1. 计算维护费影响
+            if (!inventory[901]) legalRisk += 0.5; 
+            if (!inventory[902]) globalTension += 0.5; 
+            
+            processPassiveEffects();
+
+            // 2. 收入计算
+            let realIncome = calculateRealIncome();
+            currentMoney += realIncome;
+
+            // 3. 记录历史
+            moneyHistory.push(currentMoney);
+            if(moneyHistory.length > 10) moneyHistory.shift();
+            checkBailout();
+
+            // 4. 随机事件
+            triggerRandomEvents();
+
+            // 5. 限制数值范围
+            legalRisk = Math.max(0, Math.min(100, legalRisk));
+            globalTension = Math.max(0, Math.min(100, globalTension));
+            popularity = Math.max(0, Math.min(100, popularity));
+            currentMoney = Math.max(0, currentMoney);
+
+            updateUI();
+            checkMissions();
+        }
+
+        function calculateRealIncome() {
+            let baseIncome = 0;
+            baseIncome += currentMoney * 0.0001; 
+
+            items.forEach(item => {
+                if (inventory[item.id] > 0) {
+                    baseIncome += item.income * inventory[item.id];
+                }
+            });
+
+            let popMultiplier = 1 + ((popularity - 50) / 50); 
+            
+            if (baseIncome > 0) {
+                return baseIncome * popMultiplier;
+            } else {
+                let crashFactor = 1 + ((50 - popularity) / 50); 
+                if (crashFactor < 0.5) crashFactor = 0.5; 
+                return baseIncome * crashFactor; 
+            }
+        }
+
+        function processPassiveEffects() {
+            if (inventory[901]) legalRisk -= (0.5 * inventory[901]);
+            if (inventory[902]) globalTension -= (0.5 * inventory[902]);
+            if (inventory[903]) popularity -= (0.2 * inventory[903]);
+        }
+
+        function checkBailout() {
+            if (moneyHistory.length < 10) return;
+            let start = moneyHistory[0];
+            let end = moneyHistory[moneyHistory.length - 1];
+            if (start - end > 50000000000) {
+                if (Math.random() < 0.3) {
+                    let bailoutAmount = 100000000000;
+                    currentMoney += bailoutAmount;
+                    triggerNews("突发：政府宣布你也属于'大而不倒'，强制注资1000亿美元！");
+                    showWarning("触发陷阱：政府救市！资产回血！");
+                    moneyHistory = [];
+                }
+            }
+        }
+
+        function triggerRandomEvents() {
+            if (Math.random() > 0.05) return; 
+
+            if (legalRisk > 50) {
+                triggerNews("司法部宣布对你的商业帝国展开反垄断调查。");
+                legalRisk += 5;
+            }
+            if (popularity > 80) {
+                triggerNews("粉丝团疯狂买入你的股票，股价创历史新高！");
+                currentMoney += 5000000000; 
+                showWarning("人气太高导致资产增值！");
+            }
+        }
+
+        function checkGameOver() {
+            if (legalRisk >= 100) {
+                endGame("👮‍♂️", "牢底坐穿", "你的激进策略触犯了底线。你将在联邦监狱度过余生，资产被没收。");
+                return true;
+            }
+            if (globalTension >= 100) {
+                endGame("🧊", "资产冻结", "联合国认定你为全球安全威胁。你的所有账户已被冻结。你输了，因为钱还在。");
+                return true;
+            }
+            if (currentMoney <= 0) {
+                endGame("🏆", "完美破产", "不可思议！你在没有入狱的前提下花光了所有钱。你获得了真正的自由。");
+                return true;
+            }
+            return false;
+        }
+
+        function endGame(icon, title, msg) {
+            gameStarted = false;
+            document.getElementById('modal-end').classList.remove('hidden');
+            document.getElementById('end-icon').innerText = icon;
+            document.getElementById('end-title').innerText = title;
+            document.getElementById('end-msg').innerText = msg;
+        }
+
+        // --- UI & Interaction ---
+
+        function updateUI() {
+            // Money (tabular-nums applied via CSS)
+            document.getElementById('balance-display').innerText = '$' + Math.floor(currentMoney).toLocaleString();
+            let percent = (currentMoney / INITIAL_MONEY) * 100;
+            document.getElementById('progress-bar').style.width = Math.max(0, Math.min(percent, 100)) + '%';
+            document.getElementById('percentage-text').innerText = percent.toFixed(2) + '% 剩余';
+
+            // Meters
+            updateMeter('tension', globalTension, 80);
+            updateMeter('risk', legalRisk, 80);
+            
+            // Pop meter
+            const popBar = document.getElementById('pop-bar');
+            const popVal = document.getElementById('pop-val');
+            popBar.style.width = popularity + '%';
+            popVal.innerText = popularity.toFixed(1) + '%';
+
+            // Income
+            let realInc = calculateRealIncome();
+            const incEl = document.getElementById('income-display');
+            if (realInc >= 0) {
+                incEl.innerText = '+' + Math.floor(realInc).toLocaleString() + '/s';
+                incEl.className = "text-2xl font-bold text-red-500 font-mono whitespace-nowrap overflow-hidden text-ellipsis tabular-nums min-h-[32px] income-pulse-neg"; 
+                document.getElementById('market-factor').innerText = "资产正在增值 (高人气/利息)";
+            } else {
+                incEl.innerText = Math.floor(realInc).toLocaleString() + '/s';
+                incEl.className = "text-2xl font-bold text-green-500 font-mono whitespace-nowrap overflow-hidden text-ellipsis tabular-nums min-h-[32px] income-pulse-pos"; 
+                document.getElementById('market-factor').innerText = "资产正在缩水 (完美)";
+            }
+
+            // Shop Buttons State
+            const grid = document.getElementById('shop-grid');
+            if (grid && grid.children.length > 0) {
+                 const currentItems = activeCategory === 'all' ? items : items.filter(i => i.category === activeCategory);
+                currentItems.forEach(i => {
+                    const btn = document.getElementById(`btn-buy-${i.id}`);
+                    if(btn) btn.disabled = currentMoney < i.price;
+                });
+            }
+        }
+
+        function updateMeter(id, val, dangerThresh) {
+            const bar = document.getElementById(`${id}-bar`);
+            const txt = document.getElementById(`${id}-val`);
+            bar.style.width = val + '%';
+            txt.innerText = val.toFixed(1) + '%';
+            if(val > dangerThresh) {
+                txt.classList.add('animate-pulse', 'text-red-500');
+            } else {
+                txt.classList.remove('animate-pulse', 'text-red-500');
+            }
+        }
+
+        // Actions: FIXED event handling
+        window.buyItem = function(id, e) {
+            const item = items.find(i => i.id === id);
+            if (currentMoney >= item.price) {
+                currentMoney -= item.price;
+                inventory[id] = (inventory[id] || 0) + 1;
+                
+                if (item.popDelta) popularity += item.popDelta;
+                if (item.riskDelta) legalRisk += item.riskDelta;
+                if (item.tensionDelta) globalTension += item.tensionDelta;
+
+                if (Math.random() > 0.6) generateNews(item.name);
+                
+                spawnMoneyEffect(e);
+                updateUI();
+                updateItemUI(id); 
+                checkMissions();
+            }
+        };
+
+        window.sellItem = function(id) {
+            const item = items.find(i => i.id === id);
+            if (inventory[id] > 0) {
+                // Selling returns 50% cash but doesn't revert risk/tension (Punishment)
+                currentMoney += item.price * 0.5;
+                inventory[id]--;
+                updateUI();
+                updateItemUI(id);
+            }
+        };
+
+        // 新增：专门更新单个物品数量的函数
+        function updateItemUI(id) {
+            const count = inventory[id] || 0;
+            const countEl = document.getElementById(`count-${id}`);
+            if(countEl) {
+                countEl.innerText = count;
+                // Add pop effect
+                countEl.classList.remove('scale-150', 'text-green-400');
+                void countEl.offsetWidth; // trigger reflow
+                countEl.classList.add('scale-150', 'text-green-400');
+                setTimeout(() => countEl.classList.remove('scale-150', 'text-green-400'), 200);
+            }
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('category-container');
+            container.innerHTML = categories.map(cat => `
+                <button onclick="setCategory('${cat.id}')" 
+                    class="category-btn whitespace-nowrap px-4 py-2 rounded-full border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors text-sm flex items-center gap-2 ${activeCategory === cat.id ? 'active' : ''}">
+                    <i class="fas ${cat.icon}"></i> ${cat.name}
+                </button>
+            `).join('');
+        }
+        
+        window.setCategory = function(id) { activeCategory = id; renderCategories(); renderShop(); }
+
+        function renderShop() {
+            const grid = document.getElementById('shop-grid');
+            const filtered = activeCategory === 'all' ? items : items.filter(i => i.category === activeCategory);
+            
+            grid.innerHTML = filtered.map(item => {
+                let statsHtml = "";
+                if(item.income !== 0) statsHtml += `<div class="text-[10px] ${item.income > 0 ? 'text-red-400' : 'text-green-400'}">${item.income > 0 ? '+' : ''}${item.income/1000000}M/s 现金流</div>`;
+                if(item.popDelta) statsHtml += `<div class="text-[10px] text-blue-300">人气 ${item.popDelta > 0 ? '+' : ''}${item.popDelta}</div>`;
+                if(item.riskDelta) statsHtml += `<div class="text-[10px] text-red-500">风险 +${item.riskDelta}</div>`;
+                
+                // Use image if available, background-image for card
+                const bgStyle = item.img ? `background-image: url('${item.img}');` : '';
+                const overlayClass = item.img ? 'bg-black/60 backdrop-blur-[2px]' : ''; // darker overlay for text readability
+
+                return `
+                <div class="item-card bg-gray-800 border border-gray-700 rounded-xl p-3 flex flex-col justify-between group relative overflow-hidden h-40">
+                    <!-- Image Layer -->
+                    <img src="${item.img}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.style.display='none'" />
+                    
+                    <!-- Gradient Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30"></div>
+                    
+                    ${item.category === 'management' ? '<div class="absolute top-0 right-0 bg-blue-600 text-white text-[10px] px-2 py-1 rounded-bl z-10">必买</div>' : ''}
+                    
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-1">
+                            <div>
+                                <div class="font-bold text-white leading-tight text-lg shadow-black drop-shadow-md">${item.name}</div>
+                                <div class="text-[10px] text-gray-300 shadow-black drop-shadow-md">${item.desc}</div>
+                            </div>
+                        </div>
+                        <div class="space-y-0.5 mb-1">
+                            ${statsHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-auto relative z-10">
+                        <div class="text-green-400 font-mono font-bold text-lg shadow-black drop-shadow-md">$${(item.price/1000000).toLocaleString()}M</div>
+                        <div class="flex items-center gap-1">
+                             <div class="text-white text-xs mr-2 flex items-center font-bold shadow-black drop-shadow-md">
+                                持: <span id="count-${item.id}" class="ml-1 text-green-400 font-bold transition-all duration-200 inline-block tabular-nums">${inventory[item.id]||0}</span>
+                             </div>
+                             <button onclick="buyItem(${item.id}, event)" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-bold active:scale-95 transition-transform shadow-lg" id="btn-buy-${item.id}">购买</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // 关键修复：只渲染一次 DOM 结构，后续只更新状态
+        function renderMissions() {
+            const list = document.getElementById('mission-list');
+            list.innerHTML = missions.map(m => `
+                <div id="mission-${m.id}" class="text-gray-400 transition-colors duration-300">
+                    <i id="icon-${m.id}" class="fas fa-circle text-[8px] mr-1"></i> ${m.desc}
+                </div>
+            `).join('');
+        }
+
+        function checkMissions() {
+            missions.forEach(m => {
+                if(!m.completed && m.check()) { 
+                    m.completed = true; 
+                    triggerNews("达成成就: " + m.desc);
+                    
+                    // 仅更新 CSS 类，不重绘 DOM
+                    const el = document.getElementById(`mission-${m.id}`);
+                    const icon = document.getElementById(`icon-${m.id}`);
+                    if (el && icon) {
+                        el.className = "text-green-400 line-through transition-colors duration-300";
+                        icon.className = "fas fa-check text-[8px] mr-1";
+                    }
+                }
+            });
+        }
+
+        // Gemini & News
+        async function generateNews(item) {
+            const msgs = [
+                `市场震动：马斯克购买 ${item} 引发热议！`,
+                `分析师：${item} 可能会成为马斯克帝国的转折点。`,
+                `突发：${item} 交易细节曝光，SEC表示关注。`
+            ];
+            triggerNews(msgs[Math.floor(Math.random()*msgs.length)]);
+        }
+        
+        function triggerNews(text) {
+            const t = document.getElementById('news-text');
+            t.style.animation = 'none';
+            t.offsetHeight; 
+            t.innerText = text + "   ///   " + text; 
+            t.style.animation = 'ticker 20s linear infinite';
+        }
+
+        // 修复：更新 Toast 显示逻辑，使用 transform 而非 display
+        function showWarning(text) {
+            const toast = document.getElementById('toast-warning');
+            const txt = document.getElementById('toast-text');
+            txt.innerText = text;
+            
+            toast.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function spawnMoneyEffect(e) {
+            const el = document.createElement('div');
+            el.innerText = '💸';
+            el.className = 'money-rain';
+            const x = e ? e.clientX : window.innerWidth / 2;
+            el.style.left = x + 'px';
+            el.style.animationDuration = (Math.random() * 1 + 0.5) + 's';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 2000);
+        }
+
+        // AI Advice
+        window.askGrok = function() { document.getElementById('grok-modal').classList.remove('hidden'); }
+        window.closeGrok = function() { document.getElementById('grok-modal').classList.add('hidden'); }
+        window.callGrokAdvice = async function() {
+            const el = document.getElementById('grok-content');
+            el.innerHTML = "Grok 正在计算最愚蠢的消费方式...";
+            if (apiKey) {
+                 try {
+                    const prompt = `Role: Grok AI. Context: Elon Musk Simulator. Stats: Risk ${legalRisk.toFixed(0)}%, Pop ${popularity.toFixed(0)}%, Money $${(currentMoney/1000000000).toFixed(1)}B. Goal: Lose money without jail. Output: 1 sentence Chinese advice.`;
+                    const res = await callGemini(prompt);
+                    el.innerHTML = res;
+                 } catch(e) { el.innerHTML = "Grok 离线中：建议你直接买下可口可乐然后把配方改回去。"; }
+            } else {
+                setTimeout(() => {
+                    if (popularity > 80) el.innerHTML = "你的支持率太高了！快去发点得罪人的推文，否则股票永远跌不下来！";
+                    else if (legalRisk > 80) el.innerHTML = "警报！律师团队在度假吗？快雇更多律师，否则你要在牢里过年了！";
+                    else el.innerHTML = "既然你这么有钱，为什么不考虑买下月球呢？那肯定很亏钱。";
+                }, 1000);
+            }
+        }
+        
+        async function callGemini(prompt) {
+             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+             const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+             const data = await response.json();
+             return data.candidates?.[0]?.content?.parts?.[0]?.text || "AI Error";
+        }
+
+        window.startGame = function() {
+            document.getElementById('intro-modal').classList.add('hidden');
+            gameStarted = true;
+            triggerNews("游戏开始。记住：如果你破产太快，政府会救你。慢慢来。");
+        };
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
